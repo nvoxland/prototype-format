@@ -7,7 +7,7 @@ namespace deeplake {
     class add_file_action : public action {
 
     public:
-        add_file_action(std::string path, long size, long modification_time);
+        add_file_action(std::string path, long size, long modification_time, bool data_change);
 
         add_file_action(const nlohmann::json &j);
 
@@ -23,6 +23,7 @@ namespace deeplake {
         std::string path_;
         long size_;
         long modification_time_;
+        bool data_change_;
     };
 }
 

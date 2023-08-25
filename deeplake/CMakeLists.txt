@@ -35,6 +35,8 @@ add_library(deeplake
         version_control/version_control.hpp
         version_control/branch.cpp
         version_control/branch.hpp
+        actions/remove_file_action.cpp
+        actions/remove_file_action.hpp
 )
 
 add_executable(
@@ -48,6 +50,7 @@ add_executable(
         snapshot/scan_result.test.cpp
         actions/create_branch_action.test.cpp
         version_control/version_control.test.cpp
+        actions/remove_file_action.test.cpp
 )
 
 target_link_libraries(deeplake nlohmann_json::nlohmann_json stduuid)

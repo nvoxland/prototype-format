@@ -28,7 +28,7 @@ write_data(std::string test_dir, std::string file_name, std::string content, dee
     a_stream.close();
 
     auto tx = dataset->start_transaction();
-    auto action = deeplake::add_file_action(file_name, content.size(), 100);
+    auto action = deeplake::add_file_action(file_name, content.size(), 100, true);
     return tx->commit(std::vector<deeplake::action *>{&action});
 }
 

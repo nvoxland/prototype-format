@@ -83,7 +83,7 @@ namespace deeplake {
         a_stream.close();
 
         auto tx = start_transaction();
-        auto action = deeplake::add_file_action(filename.filename(), std::filesystem::file_size(filename), current_timestamp());
+        auto action = deeplake::add_file_action(filename.filename(), std::filesystem::file_size(filename), current_timestamp(), true);
         tx->commit(std::vector<deeplake::action *>{&action});
     }
 

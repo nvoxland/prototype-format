@@ -34,9 +34,9 @@ TEST_F(ScanResultTest, range_support) {
     c_stream.close();
 
     auto result = deeplake::scan_result(test_dir, std::vector<deeplake::add_file_action> {
-            deeplake::add_file_action("a.txt", 3, 5),
-            deeplake::add_file_action("b.txt", 3, 5),
-            deeplake::add_file_action("c.txt", 3, 5),
+            deeplake::add_file_action("a.txt", 3, 5, true),
+            deeplake::add_file_action("b.txt", 3, 5, true),
+            deeplake::add_file_action("c.txt", 3, 5, true),
     });
 
     EXPECT_EQ("Value 1", result[0]);
