@@ -79,3 +79,47 @@ TEST_F(DatasetTest, create_branch) {
     EXPECT_EQ(deeplake::main_branch().id(), branch2_snapshot->branch().from_id());
 }
 
+TEST_F(DatasetTest, add_data) {
+    auto dataset = deeplake::create_dataset(test_dir);
+    dataset.add_data(std::vector<std::string>{"a", "b", "c"});
+    EXPECT_EQ(1, dataset.snapshot()->version());
+
+    json jf = json::parse(std::ifstream(test_dir + "/_deeplake_log/00000000000000000001.json"));
+    EXPECT_EQ(1, jf.size());
+    std::string added_path = jf[0].at("add").at("path");
+    EXPECT_NE("", added_path);
+    EXPECT_EQ(std::string::npos, added_path.find('/'));
+
+    std::stringstream seen_data;
+    for (auto val: dataset.snapshot()->scan()) {
+        seen_data << val << ",";
+    }
+
+    EXPECT_EQ(seen_data.str(), "a,b,c,");
+}
+
+//TEST(E2EDatasetTest, e2e) {
+////    auto dataset = deeplake::create_dataset("../test-ds");
+//
+//    auto dataset = deeplake::dataset("../test-ds");
+//
+////        dataset.create_branch("alt1");
+//    dataset.checkout_branch("alt1");
+////        dataset.create_branch("alt2");
+////    dataset.checkout_branch("alt2");
+//
+////    dataset.add_data(std::vector<std::string>{"a", "b", "c"});
+////    dataset.add_data(std::vector<std::string>{"d"});
+////    dataset.add_data(std::vector<std::string>{"e"});
+////    dataset.add_data(std::vector<std::string>{"f"});
+////    dataset.add_data(std::vector<std::string>{"g"});
+//
+//    auto snapshot = dataset.snapshot();
+//    std::cout << "Version: " << snapshot->version() << std::endl;
+//    std::cout << "Data:" << std::endl;
+//    for (const auto &data: snapshot->scan()) {
+//        std::cout << "   " << data << std::endl;
+//    }
+//
+//
+//}

@@ -13,7 +13,7 @@ namespace deeplake {
 
     class optimistic_transaction;
 
-    class dataset {
+class dataset : public std::enable_shared_from_this<dataset> {
     public:
         explicit dataset(const std::string path);
 
@@ -24,6 +24,8 @@ namespace deeplake {
         std::unique_ptr<optimistic_transaction> start_transaction();
 
         std::shared_ptr<version_control> version_control();
+
+        void add_data(std::vector<std::string> data);
 
         void update();
 

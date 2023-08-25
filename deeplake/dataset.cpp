@@ -5,6 +5,7 @@
 #include "actions/metadata_action.hpp"
 #include "actions/create_branch_action.hpp"
 #include <filesystem>
+#include <fstream>
 
 using json = nlohmann::json;
 
@@ -40,7 +41,8 @@ namespace deeplake {
         auto metadata = deeplake::metadata_action(generate_uuid(), std::nullopt, std::nullopt, current_timestamp());
 
         auto mainBranch = main_branch();
-        auto branch = deeplake::create_branch_action(mainBranch.id(), mainBranch.name(), mainBranch.from_id(), mainBranch.from_version());
+        auto branch = deeplake::create_branch_action(mainBranch.id(), mainBranch.name(), mainBranch.from_id(),
+                                                     mainBranch.from_version());
 
         actions.push_back(&protocol);
         actions.push_back(&metadata);
@@ -67,9 +69,24 @@ namespace deeplake {
         if (current_snapshot_ == nullptr || current_snapshot_->branch().is_main()) {
             current_snapshot_ = main_snapshot_;
         } else {
-            current_snapshot_ = std::make_shared<deeplake::snapshot>(deeplake::snapshot(current_snapshot_->branch(), this));
+            current_snapshot_ = std::make_shared<deeplake::snapshot>(
+                    deeplake::snapshot(current_snapshot_->branch(), this));
         }
     }
+
+    void dataset::add_data(std::vector<std::string> data) {
+        std::filesystem::path filename = this->path_ + "/" + generate_uuid() + ".txt";
+        auto a_stream = std::ofstream(filename);
+        for (auto &item: data) {
+            a_stream << item << std::endl;
+        }
+        a_stream.close();
+
+        auto tx = start_transaction();
+        auto action = deeplake::add_file_action(filename.filename(), std::filesystem::file_size(filename), current_timestamp());
+        tx->commit(std::vector<deeplake::action *>{&action});
+    }
+
 
     std::shared_ptr<snapshot> dataset::create_branch(std::string name) {
         auto new_id = generate_uuid();
