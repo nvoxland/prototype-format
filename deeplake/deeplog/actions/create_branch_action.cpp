@@ -26,7 +26,7 @@ namespace deeplake {
 
     std::string create_branch_action::name() { return name_; }
 
-    std::string create_branch_action::from_branch_id() { return from_branch_id_; }
+    std::string create_branch_action::from_id() { return from_branch_id_; }
 
     long create_branch_action::from_version() { return from_version_; }
 }

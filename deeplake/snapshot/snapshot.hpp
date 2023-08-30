@@ -3,50 +3,41 @@
 
 #include <string>
 #include "../dataset.hpp"
-#include "../actions/metadata_action.hpp"
-#include "../actions/protocol_action.hpp"
-#include "../actions/add_file_action.hpp"
 #include "scan_result.hpp"
-#include "../actions/create_branch_action.hpp"
-#include "../version_control/branch.hpp"
+#include "../branch.hpp"
+#include "../protocol.hpp"
+#include "../metadata.hpp"
+#include "../transaction/optimistic_transaction.hpp"
+#include "../deeplog/deeplog.hpp"
 
 namespace deeplake {
 
     class dataset;
 
-    class snapshot {
+    class optimistic_transaction;
+
+    class snapshot : public std::enable_shared_from_this<snapshot> {
     public:
-        snapshot(deeplake::branch branch, dataset *dataset);
+        snapshot(deeplake::branch branch, long version, std::vector<std::string> files,
+                 std::shared_ptr<deeplog> deeplog);
 
-        std::string path();
+        long version() const;
 
-        long version();
+        deeplake::branch branch() const;
 
-        deeplake::branch branch();
+        std::unique_ptr<deeplake::snapshot> create_branch(std::string name);
 
-        protocol_action protocol();
-
-        metadata_action metadata();
-
-        std::vector<add_file_action> files();
-
-        std::vector<create_branch_action> branches();
+        std::unique_ptr<deeplake::optimistic_transaction> start_transaction();
 
         scan_result scan();
 
 
     private:
-        void replay_log(deeplake::branch branch, long from, long to, dataset *dataset);
-
         long version_;
         deeplake::branch branch_;
-        protocol_action protocol_;
-        metadata_action metadata_;
-        std::vector<add_file_action> files_;
-        std::vector<create_branch_action> branches_;
-        dataset *dataset_;
+        std::vector<std::string> files_;
+        std::shared_ptr<deeplake::deeplog> deeplog_;
     };
-
 
 }
 

@@ -19,38 +19,44 @@ enable_testing()
 
 add_library(deeplake
         dataset.cpp
-        actions/action.cpp
-        actions/protocol_action.cpp
-        actions/metadata_action.cpp
+        deeplog/actions/action.cpp
+        deeplog/actions/protocol_action.cpp
+        deeplog/actions/metadata_action.cpp
         snapshot/snapshot.cpp
         transaction/optimistic_transaction.cpp
         transaction/commit_result.cpp
-        actions/add_file_action.cpp
-        actions/add_file_action.hpp
+        deeplog/actions/add_file_action.cpp
+        deeplog/actions/add_file_action.hpp
         snapshot/scan_result.cpp
         snapshot/scan_result.hpp
-        actions/create_branch_action.cpp
-        actions/create_branch_action.hpp
-        version_control/version_control.cpp
-        version_control/version_control.hpp
-        version_control/branch.cpp
-        version_control/branch.hpp
-        actions/remove_file_action.cpp
-        actions/remove_file_action.hpp
+        deeplog/actions/create_branch_action.cpp
+        deeplog/actions/create_branch_action.hpp
+        branch.cpp
+        branch.hpp
+        deeplog/actions/remove_file_action.cpp
+        deeplog/actions/remove_file_action.hpp
+        deeplog/deeplog.cpp
+        deeplog/deeplog.hpp
+        metadata.cpp
+        metadata.hpp
+        protocol.cpp
+        protocol.hpp
+        branches.cpp
+        branches.hpp
 )
 
 add_executable(
         runTests
         dataset.test.cpp
-        actions/protocol_action.test.cpp
-        actions/metadata_action.test.cpp
+        deeplog/actions/protocol_action.test.cpp
+        deeplog/actions/metadata_action.test.cpp
         transaction/optimistic_transaction.test.cpp
-        actions/add_file_action.test.cpp
+        deeplog/actions/add_file_action.test.cpp
         snapshot/snapshot.test.cpp
         snapshot/scan_result.test.cpp
-        actions/create_branch_action.test.cpp
-        version_control/version_control.test.cpp
-        actions/remove_file_action.test.cpp
+        deeplog/actions/create_branch_action.test.cpp
+        deeplog/actions/remove_file_action.test.cpp
+        deeplog/deeplog.test.cpp
 )
 
 target_link_libraries(deeplake nlohmann_json::nlohmann_json stduuid)

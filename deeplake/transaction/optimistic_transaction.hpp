@@ -2,10 +2,10 @@
 #define DEEPLAKE_OPTIMISTIC_TRANSACTION_HPP
 
 #include "../snapshot/snapshot.hpp"
-#include "../actions/action.hpp"
 #include <string>
 #include "commit_result.hpp"
 #include "../dataset.hpp"
+#include "../branch.hpp"
 
 namespace deeplake {
     class dataset;
@@ -14,14 +14,22 @@ namespace deeplake {
 
     class commit_result;
 
+    class snapshot;
+
+    class deeplog;
+
     class optimistic_transaction {
     public:
-        optimistic_transaction(deeplake::dataset *dataset);
+        optimistic_transaction(const deeplake::branch &snapshot_branch,
+                               const long &snapshot_version,
+                               const std::shared_ptr<deeplake::deeplog> deeplog);
 
         deeplake::commit_result commit(std::vector<deeplake::action *> actions);
 
     private:
-        deeplake::dataset *dataset_;
+        deeplake::branch snapshot_branch_;
+        long snapshot_version_;
+        std::shared_ptr<deeplake::deeplog> deeplog_;
     };
 }
 

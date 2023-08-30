@@ -6,7 +6,7 @@
 #define DEEPLAKE_SCAN_RESULT_HPP
 
 #include <string>
-#include "../actions/add_file_action.hpp"
+#include "../deeplog/actions/add_file_action.hpp"
 
 namespace deeplake {
     class scan_result {

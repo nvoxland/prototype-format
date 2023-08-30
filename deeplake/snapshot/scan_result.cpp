@@ -1,4 +1,5 @@
 #include "scan_result.hpp"
+#include "../deeplog/actions/add_file_action.hpp"
 
 #include <fstream>
 

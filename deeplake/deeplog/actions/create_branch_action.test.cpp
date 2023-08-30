@@ -15,6 +15,6 @@ TEST(CreateBranchActionTest, to_json) {
     auto parsed = deeplake::create_branch_action(j);
     EXPECT_EQ("my_id", parsed.id());
     EXPECT_EQ("my_name", parsed.name());
-    EXPECT_EQ("other_id", parsed.from_branch_id());
+    EXPECT_EQ("other_id", parsed.from_id());
     EXPECT_EQ(93, parsed.from_version());
 }

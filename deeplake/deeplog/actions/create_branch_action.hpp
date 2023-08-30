@@ -15,7 +15,7 @@ namespace deeplake {
 
         std::string name();
 
-        std::string from_branch_id();
+        std::string from_id();
         long from_version();
 
         void to_json(nlohmann::json &json) override;

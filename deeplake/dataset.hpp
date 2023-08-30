@@ -4,7 +4,10 @@
 #include <filesystem>
 #include "transaction/optimistic_transaction.hpp"
 #include "snapshot/snapshot.hpp"
-#include "version_control/version_control.hpp"
+#include "deeplog/deeplog.hpp"
+#include "protocol.hpp"
+#include "metadata.hpp"
+#include "branches.hpp"
 #include <map>
 
 namespace deeplake {
@@ -13,33 +16,44 @@ namespace deeplake {
 
     class optimistic_transaction;
 
-class dataset : public std::enable_shared_from_this<dataset> {
+    class branches;
+
+    class deeplog;
+
+    class dataset : public std::enable_shared_from_this<dataset> {
     public:
-        explicit dataset(const std::string path);
+        static std::unique_ptr<dataset> create(const std::string &path);
+
+        static std::unique_ptr<dataset> open(const std::string &path);
 
         std::string path() const;
 
-        std::shared_ptr<snapshot> snapshot();
+        std::unique_ptr<deeplake::snapshot> snapshot(const deeplake::branch &branch, const long &version);
 
-        std::unique_ptr<optimistic_transaction> start_transaction();
+        std::unique_ptr<deeplake::snapshot> snapshot(const deeplake::branch &branch);
 
-        std::shared_ptr<version_control> version_control();
+        std::unique_ptr<deeplake::snapshot> snapshot(const std::string &branch_name);
 
-        void add_data(std::vector<std::string> data);
+        std::unique_ptr<deeplake::snapshot> snapshot();
 
-        void update();
+        std::unique_ptr<deeplake::snapshot> snapshot(const deeplake::snapshot &snapshot);
 
-        std::shared_ptr<deeplake::snapshot> create_branch(std::string name);
-        std::shared_ptr<deeplake::snapshot> checkout_branch(std::string branch_name);
+        std::shared_ptr<protocol> protocol();
+
+        std::shared_ptr<metadata> metadata();
+
+//        void add_data(std::vector<std::string> data);
+
+        std::shared_ptr<branches> branches();
 
     private:
+        dataset(const std::string &path, const std::shared_ptr<deeplake::deeplog> &deeplog);
+
         std::string path_;
-        std::shared_ptr<deeplake::snapshot> main_snapshot_;
-        std::shared_ptr<deeplake::snapshot> current_snapshot_;
-        std::shared_ptr<deeplake::version_control> version_control_;
+        std::shared_ptr<deeplake::deeplog> deeplog_;
+        std::shared_ptr<deeplake::branches> branches_;
     };
 
-    dataset create_dataset(const std::string path);
 
 }
 

@@ -2,7 +2,6 @@
 #define DEEPLAKE_COMMIT_RESULT_HPP
 
 #include "../snapshot/snapshot.hpp"
-#include "../actions/action.hpp"
 #include <string>
 
 namespace deeplake {

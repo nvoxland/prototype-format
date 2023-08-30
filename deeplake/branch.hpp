@@ -9,15 +9,15 @@ namespace deeplake {
     public:
         branch(std::string id, std::string name, std::string from_id, long from_version);
 
-        std::string id();
+        std::string id() const;
 
-        std::string name();
+        std::string name() const;
 
-        std::string from_id();
+        std::string from_id() const;
 
-        long from_version();
+        long from_version() const;
 
-        bool is_main();
+        bool is_main() const;
 
     private:
         std::string id_;
