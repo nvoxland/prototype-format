@@ -2,11 +2,8 @@
 #define DEEPLAKE_DEEPLOG_HPP
 
 #include <string>
-#include "../branch.hpp"
 #include "actions/add_file_action.hpp"
 #include "../snapshot/snapshot.hpp"
-#include "../protocol.hpp"
-#include "../metadata.hpp"
 #include "actions/protocol_action.hpp"
 #include "actions/metadata_action.hpp"
 #include "actions/create_branch_action.hpp"

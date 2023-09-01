@@ -92,8 +92,6 @@ TEST_F(DeeplogTest, commit_protocol) {
 TEST_F(DeeplogTest, comit_metadata) {
     auto log = deeplake::deeplog::create(test_dir);
 
-    auto branch = deeplake::branches::main();
-
     auto original_metadata = log->metadata().data;
     auto action = deeplake::metadata_action(original_metadata->id(), "new name", "new desc", original_metadata->created_time());
     log->commit(deeplake::MAIN_BRANCH_ID, log->version(deeplake::MAIN_BRANCH_ID), {&action});

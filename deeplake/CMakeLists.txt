@@ -18,39 +18,26 @@ FetchContent_MakeAvailable(googletest json stduuid)
 enable_testing()
 
 add_library(deeplake
-        dataset.cpp
         deeplog/actions/action.cpp
         deeplog/actions/protocol_action.cpp
         deeplog/actions/metadata_action.cpp
         snapshot/snapshot.cpp
-        transaction/optimistic_transaction.cpp
-        transaction/commit_result.cpp
         deeplog/actions/add_file_action.cpp
         deeplog/actions/add_file_action.hpp
         snapshot/scan_result.cpp
         snapshot/scan_result.hpp
         deeplog/actions/create_branch_action.cpp
         deeplog/actions/create_branch_action.hpp
-        branch.cpp
-        branch.hpp
         deeplog/actions/remove_file_action.cpp
         deeplog/actions/remove_file_action.hpp
         deeplog/deeplog.cpp
         deeplog/deeplog.hpp
-        metadata.cpp
-        metadata.hpp
-        protocol.cpp
-        protocol.hpp
-        branches.cpp
-        branches.hpp
 )
 
 add_executable(
         runTests
-        dataset.test.cpp
         deeplog/actions/protocol_action.test.cpp
         deeplog/actions/metadata_action.test.cpp
-        transaction/optimistic_transaction.test.cpp
         deeplog/actions/add_file_action.test.cpp
         snapshot/snapshot.test.cpp
         snapshot/scan_result.test.cpp

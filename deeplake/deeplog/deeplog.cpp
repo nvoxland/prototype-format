@@ -111,7 +111,7 @@ namespace deeplake {
     deeplog_state<std::shared_ptr<std::vector<deeplake::create_branch_action>>> deeplog::branches() const {
         auto tx_files = list_files(MAIN_BRANCH_ID, 0, std::nullopt);
 
-        std::shared_ptr<std::vector<create_branch_action>> branches = {};
+        std::vector<create_branch_action> branches = {};
 
         for (const auto &path: tx_files.data) {
             std::ifstream ifs(path);
@@ -120,12 +120,12 @@ namespace deeplake {
             for (auto &element: jsonArray) {
                 if (element.contains("createBranch")) {
                     auto parsed = deeplake::create_branch_action(element);
-                    branches->push_back(parsed);
+                    branches.push_back(parsed);
                 }
             }
         }
 
-        return {branches, tx_files.version};
+        return {std::make_shared<std::vector<create_branch_action>>(branches), tx_files.version};
     }
 
 
