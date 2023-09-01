@@ -10,11 +10,11 @@
 
 namespace deeplake {
 
-    class snapshot;
-
     const std::string MAIN_BRANCH_ID = "";
 
-    template <typename T>
+    class snapshot;
+
+    template<typename T>
     struct deeplog_state {
         deeplog_state(T data, long version) : data(data), version(version) {}
 

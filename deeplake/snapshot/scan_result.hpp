@@ -13,9 +13,10 @@ namespace deeplake {
     public:
 
         explicit scan_result(std::vector<std::string> data);
+
         explicit scan_result(std::string base_path, std::vector<add_file_action> files);
 
-        std::string& operator[](int idx);
+        std::string &operator[](int idx);
 
         std::vector<std::string>::iterator begin();
 

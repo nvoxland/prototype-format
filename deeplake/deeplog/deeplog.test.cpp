@@ -73,6 +73,18 @@ TEST_F(DeeplogTest, open) {
     EXPECT_EQ(test_dir, log->path());
 }
 
+TEST_F(DeeplogTest, version) {
+    auto log = deeplake::deeplog::create(test_dir);
+    EXPECT_EQ(0, log->version());
+    EXPECT_EQ(0, log->version(deeplake::MAIN_BRANCH_ID));
+}
+
+TEST_F(DeeplogTest, branch_by_id) {
+    auto log = deeplake::deeplog::create(test_dir);
+    EXPECT_EQ("main", log->branch_by_id(deeplake::MAIN_BRANCH_ID).data->name());
+}
+
+
 TEST_F(DeeplogTest, commit_protocol) {
     auto log = deeplake::deeplog::create(test_dir);
 
@@ -89,7 +101,7 @@ TEST_F(DeeplogTest, commit_protocol) {
     EXPECT_EQ(6, log->protocol().data->min_writer_version());
 }
 
-TEST_F(DeeplogTest, comit_metadata) {
+TEST_F(DeeplogTest, commit_metadata) {
     auto log = deeplake::deeplog::create(test_dir);
 
     auto original_metadata = log->metadata().data;
@@ -106,4 +118,46 @@ TEST_F(DeeplogTest, comit_metadata) {
     EXPECT_EQ(original_metadata->created_time(), log->metadata().data->created_time());
     EXPECT_EQ("new name", log->metadata().data->name());
     EXPECT_EQ("new desc", log->metadata().data->description());
+}
+
+TEST_F(DeeplogTest, commit_add_file) {
+    auto log = deeplake::deeplog::create(test_dir);
+
+    auto action = deeplake::add_file_action("my/path", 3, 45, true);
+    log->commit(deeplake::MAIN_BRANCH_ID, log->version(deeplake::MAIN_BRANCH_ID), {&action});
+
+    EXPECT_EQ((std::set<std::string>{"00000000000000000000.json", "00000000000000000001.json"}), list_log_files());
+    std::ifstream ifs(test_dir + "/_deeplake_log/00000000000000000001.json");
+    nlohmann::json jf = nlohmann::json::parse(ifs);
+    EXPECT_EQ(1, jf.size());
+    EXPECT_TRUE(jf[0].contains("add"));
+
+    const auto &files = log->data_files(deeplake::MAIN_BRANCH_ID, std::nullopt).data;
+
+    EXPECT_EQ(1, files.size());
+    EXPECT_EQ("my/path", files[0].path());
+    EXPECT_EQ(3, files[0].size());
+    EXPECT_EQ(45, files[0].modification_time());
+}
+
+TEST_F(DeeplogTest, commit_create_branch) {
+    auto log = deeplake::deeplog::create(test_dir);
+
+    auto action = deeplake::create_branch_action("123", "branch1", deeplake::MAIN_BRANCH_ID, 0);
+    log->commit(deeplake::MAIN_BRANCH_ID, log->version(deeplake::MAIN_BRANCH_ID), {&action});
+
+    EXPECT_EQ((std::set<std::string>{"00000000000000000000.json", "00000000000000000001.json"}), list_log_files());
+    std::ifstream ifs(test_dir + "/_deeplake_log/00000000000000000001.json");
+    nlohmann::json jf = nlohmann::json::parse(ifs);
+    EXPECT_EQ(1, jf.size());
+    EXPECT_TRUE(jf[0].contains("createBranch"));
+
+    const auto &branches = log->branches().data;
+
+    EXPECT_EQ(2, branches->size());
+    EXPECT_EQ("", (*branches)[0].id());
+    EXPECT_EQ("main", (*branches)[0].name());
+
+    EXPECT_EQ("123", (*branches)[1].id());
+    EXPECT_EQ("branch1", (*branches)[1].name());
 }

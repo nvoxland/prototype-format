@@ -9,12 +9,12 @@ namespace deeplake {
     }
 
     scan_result::scan_result(std::string base_path, std::vector<add_file_action> files) : data_(std::vector<std::string>()) {
-        for (add_file_action add_file : files) {
-           auto file_stream = std::ifstream(base_path+"/"+add_file.path());
-           std::string line;
-           while (std::getline(file_stream, line)) {
-               data_.emplace_back(line);
-           }
+        for (add_file_action add_file: files) {
+            auto file_stream = std::ifstream(base_path + "/" + add_file.path());
+            std::string line;
+            while (std::getline(file_stream, line)) {
+                data_.emplace_back(line);
+            }
         }
     }
 

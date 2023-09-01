@@ -11,11 +11,11 @@ namespace deeplake {
 
         add_file_action(const nlohmann::json &j);
 
-        std::string path();
+        std::string path() const;
 
-        long size();
+        long size() const;
 
-        long modification_time();
+        long modification_time() const;
 
         virtual void to_json(nlohmann::json &json) override;
 

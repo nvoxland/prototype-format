@@ -30,7 +30,7 @@ namespace deeplake {
         return id_;
     }
 
-    std::optional<std::string> deeplake::metadata_action::name() const  {
+    std::optional<std::string> deeplake::metadata_action::name() const {
         return name_;
     }
 
@@ -38,7 +38,7 @@ namespace deeplake {
         return description_;
     }
 
-    long deeplake::metadata_action::created_time()const  {
+    long deeplake::metadata_action::created_time() const {
         return created_time_;
     }
 
