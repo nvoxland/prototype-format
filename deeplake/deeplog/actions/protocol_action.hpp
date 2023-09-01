@@ -11,9 +11,9 @@ namespace deeplake {
 
         protocol_action(const nlohmann::json &j);
 
-        int min_reader_version();
+        int min_reader_version() const;
 
-        int min_writer_version();
+        int min_writer_version() const;
 
         virtual void to_json(nlohmann::json &json) override;
 

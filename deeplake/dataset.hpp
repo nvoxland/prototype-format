@@ -28,7 +28,7 @@ namespace deeplake {
 
         std::string path() const;
 
-        std::unique_ptr<deeplake::snapshot> snapshot(const deeplake::branch &branch, const long &version);
+        std::unique_ptr<deeplake::snapshot> snapshot(const deeplake::branch &branch, const std::optional<long> &version);
 
         std::unique_ptr<deeplake::snapshot> snapshot(const deeplake::branch &branch);
 

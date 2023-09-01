@@ -18,7 +18,7 @@ namespace deeplake {
 
     class snapshot : public std::enable_shared_from_this<snapshot> {
     public:
-        snapshot(deeplake::branch branch, long version, std::vector<std::string> files,
+        snapshot(deeplake::branch branch, long version, std::vector<deeplake::add_file_action> files,
                  std::shared_ptr<deeplog> deeplog);
 
         long version() const;
@@ -35,8 +35,9 @@ namespace deeplake {
     private:
         long version_;
         deeplake::branch branch_;
-        std::vector<std::string> files_;
+        std::vector<add_file_action> files_;
         std::shared_ptr<deeplake::deeplog> deeplog_;
+        std::shared_ptr<deeplake::dataset> dataset_;
     };
 
 }

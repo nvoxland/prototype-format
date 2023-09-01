@@ -2,12 +2,15 @@
 #define DEEPLAKE_BRANCH_HPP
 
 #include <string>
+#include "deeplog/actions/create_branch_action.hpp"
 
 
 namespace deeplake {
     class branch {
     public:
         branch(std::string id, std::string name, std::string from_id, long from_version);
+
+        branch(const deeplake::create_branch_action &action);
 
         std::string id() const;
 
@@ -25,8 +28,6 @@ namespace deeplake {
         std::string from_id_;
         long from_version_;
     };
-
-    deeplake::branch main_branch();
 }
 
 

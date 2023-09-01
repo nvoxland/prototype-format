@@ -2,6 +2,7 @@
 #define DEEPLAKE_PROTOCOL_HPP
 
 #include <string>
+#include "deeplog/actions/protocol_action.hpp"
 
 namespace deeplake {
 
@@ -12,6 +13,8 @@ namespace deeplake {
                  const int& min_writer_version,
                  const std::vector<std::string>& reader_features,
                  const std::vector<std::string>& writer_features);
+
+        protocol(const deeplake::protocol_action &action);
 
         int min_reader_version();
 

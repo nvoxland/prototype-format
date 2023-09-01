@@ -22,11 +22,11 @@ namespace deeplake {
         j["createBranch"]["fromVersion"] = from_version_;
     }
 
-    std::string create_branch_action::id() { return id_; }
+    std::string create_branch_action::id() const { return id_; }
 
-    std::string create_branch_action::name() { return name_; }
+    std::string create_branch_action::name() const { return name_; }
 
-    std::string create_branch_action::from_id() { return from_branch_id_; }
+    std::string create_branch_action::from_id() const { return from_branch_id_; }
 
-    long create_branch_action::from_version() { return from_version_; }
+    long create_branch_action::from_version() const { return from_version_; }
 }

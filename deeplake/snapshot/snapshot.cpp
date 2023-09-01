@@ -10,7 +10,7 @@ using json = nlohmann::json;
 
 namespace deeplake {
 
-    snapshot::snapshot(deeplake::branch branch, long version, std::vector<std::string> files,
+    snapshot::snapshot(deeplake::branch branch, long version, std::vector<add_file_action> files,
                        std::shared_ptr<deeplog> deeplog) :
             branch_(branch),
             version_(version),
@@ -35,8 +35,8 @@ namespace deeplake {
     std::unique_ptr<deeplake::snapshot> snapshot::create_branch(std::string name) {
         auto action = deeplake::create_branch_action(generate_uuid(), name, branch_.id(), version_);
 
-        deeplog_->commit(main_branch(), deeplog_->branch_version(main_branch()), {&action});
+        deeplog_->commit(branches::main().id(), deeplog_->version(branches::main().id()), {&action});
 
-        return deeplog_->snapshot(deeplog_->branch_by_id(action.id()), std::nullopt);
+        return dataset_->snapshot(deeplog_->branch_by_id(action.id()).data->id());
     }
 }

@@ -26,19 +26,19 @@ namespace deeplake {
     }
 
 
-    std::string deeplake::metadata_action::id() {
+    std::string deeplake::metadata_action::id() const {
         return id_;
     }
 
-    std::optional<std::string> deeplake::metadata_action::name() {
+    std::optional<std::string> deeplake::metadata_action::name() const  {
         return name_;
     }
 
-    std::optional<std::string> deeplake::metadata_action::description() {
+    std::optional<std::string> deeplake::metadata_action::description() const {
         return description_;
     }
 
-    long deeplake::metadata_action::created_time() {
+    long deeplake::metadata_action::created_time()const  {
         return created_time_;
     }
 

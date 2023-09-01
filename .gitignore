@@ -1,1 +1,5 @@
-cmake-build-debug
+.idea
+.vscode
+deeplake/cmake-build-debug
+deeplake/cmake-build-debug-coverage
+test-ds

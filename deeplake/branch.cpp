@@ -1,9 +1,12 @@
 #include "branch.hpp"
+#include "branches.hpp"
 
 namespace deeplake {
     branch::branch(std::string id, std::string name, std::string from_id, long from_version) :
             id_(id), name_(name), from_id_(from_id), from_version_(from_version) {}
 
+    branch::branch(const deeplake::create_branch_action &action) :
+            id_(action.id()), name_(action.name()), from_id_(action.from_id()), from_version_(action.from_version()) {}
 
     std::string branch::id() const { return id_; }
 
@@ -14,10 +17,6 @@ namespace deeplake {
     long branch::from_version() const { return from_version_; }
 
     bool branch::is_main() const {
-        return id_ == main_branch().id();
-    }
-
-    deeplake::branch main_branch() {
-        return deeplake::branch("", "main", "", -1);
+        return id_ == deeplake::branches::main().id();
     }
 }

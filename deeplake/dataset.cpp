@@ -19,19 +19,20 @@ namespace deeplake {
     }
 
     std::unique_ptr<deeplake::snapshot> dataset::snapshot(const deeplake::branch &branch) {
-        return deeplog_->snapshot(branch, std::nullopt);
+        return snapshot(branch, std::nullopt);
     }
 
     std::unique_ptr<deeplake::snapshot> dataset::snapshot(const std::string &branch_name) {
-        return this->snapshot(branches_->branch(branch_name));
+        return snapshot(branches_->branch(branch_name)->id());
     }
 
     std::unique_ptr<deeplake::snapshot> dataset::snapshot() {
-        return deeplog_->snapshot(main_branch(), std::nullopt);
+        return snapshot(branches::main(), std::nullopt);
     }
 
-    std::unique_ptr<deeplake::snapshot> dataset::snapshot(const deeplake::branch &branch, const long &version) {
-        return deeplog_->snapshot(branch, version);
+    std::unique_ptr<deeplake::snapshot> dataset::snapshot(const deeplake::branch &branch, const std::optional<long> &version) {
+        auto files = deeplog_->data_files(branch.id(), version);
+        return std::make_unique<deeplake::snapshot>(deeplake::snapshot(branch, files.version, files.data, deeplog_));
     }
 
     std::unique_ptr<deeplake::snapshot> dataset::snapshot(const deeplake::snapshot &snapshot) {
@@ -39,12 +40,12 @@ namespace deeplake {
     }
 
 
-    std::shared_ptr<protocol> dataset::protocol() {
-        return deeplog_->protocol();
+    std::shared_ptr<deeplake::protocol> dataset::protocol() {
+        return std::make_shared<deeplake::protocol>(*(deeplog_->protocol().data));
     }
 
     std::shared_ptr<metadata> dataset::metadata() {
-        return deeplog_->metadata();
+        return std::make_shared<deeplake::metadata>(*(deeplog_->metadata().data));
     }
 
     std::shared_ptr<deeplake::branches> dataset::branches() {
@@ -53,17 +54,6 @@ namespace deeplake {
 
     std::unique_ptr<dataset> dataset::create(const std::string &path) {
         const auto &deeplog = deeplake::deeplog::create(path);
-
-        std::vector<action *> actions;
-
-        auto protocol = deeplake::protocol_action(4, 4);
-        auto metadata = deeplake::metadata_action(generate_uuid(), std::nullopt, std::nullopt, current_timestamp());
-
-        auto mainBranch = main_branch();
-        auto branch = deeplake::create_branch_action(mainBranch.id(), mainBranch.name(), mainBranch.from_id(),
-                                                     mainBranch.from_version());
-
-        deeplog->commit(main_branch(), -1, {&protocol, &metadata, &branch});
 
         return std::make_unique<dataset>(dataset(path, deeplog));
     }

@@ -15,13 +15,13 @@ namespace deeplake {
 
         metadata_action(const nlohmann::json &j);
 
-        std::string id();
+        std::string id() const;
 
-        std::optional<std::string> name();
+        std::optional<std::string> name() const;
 
-        std::optional<std::string> description();
+        std::optional<std::string> description() const;
 
-        long created_time();
+        long created_time() const;
 
         virtual void to_json(nlohmann::json &json) override;
 

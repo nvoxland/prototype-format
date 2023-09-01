@@ -9,11 +9,11 @@ namespace deeplake {
         j.at("protocol").at("minWriterVersion").get_to(min_writer_version_);
     }
 
-    int protocol_action::min_reader_version() {
+    int protocol_action::min_reader_version() const {
         return min_reader_version_;
     }
 
-    int protocol_action::min_writer_version() {
+    int protocol_action::min_writer_version() const {
         return min_writer_version_;
     }
 

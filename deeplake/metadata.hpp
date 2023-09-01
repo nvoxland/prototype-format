@@ -2,6 +2,7 @@
 #define DEEPLAKE_METADATA_HPP
 
 #include <string>
+#include "deeplog/actions/metadata_action.hpp"
 
 namespace deeplake {
     class metadata {
@@ -11,6 +12,9 @@ namespace deeplake {
                  std::optional<std::string> description,
                  long created_time
         );
+
+        metadata(const deeplake::metadata_action &action);
+
 
         std::string id();
 

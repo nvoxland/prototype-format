@@ -13,7 +13,7 @@ namespace deeplake {
             : snapshot_branch_(snapshot_branch), snapshot_version_(snapshot_version), deeplog_(deeplog) {}
 
     commit_result optimistic_transaction::commit(std::vector<deeplake::action *> actions) {
-        deeplog_->commit(snapshot_branch_, snapshot_version_, actions);
+        deeplog_->commit(snapshot_branch_.id(), snapshot_version_, actions);
 
 //        long nextVersion = snapshot_->version() + 1;
 //

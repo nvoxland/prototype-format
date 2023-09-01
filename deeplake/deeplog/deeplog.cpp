@@ -9,9 +9,7 @@
 
 namespace deeplake {
 
-    deeplog::deeplog(std::string path) : path_(path), all_branches_(std::make_shared<std::vector<deeplake::branch>>()) {
-        read_main();
-    };
+    deeplog::deeplog(std::string path) : path_(path) {};
 
     std::shared_ptr<deeplake::deeplog> deeplog::create(std::string path) {
         if (std::filesystem::exists(path)) {
@@ -21,7 +19,18 @@ namespace deeplake {
         std::filesystem::create_directories(path);
         std::filesystem::create_directories(path + "/_deeplake_log");
 
-        return open(path);
+        auto log = open(path);
+        std::vector<action *> actions;
+
+        auto protocol = deeplake::protocol_action(4, 4);
+        auto metadata = deeplake::metadata_action(generate_uuid(), std::nullopt, std::nullopt, current_timestamp());
+
+        auto branch = deeplake::create_branch_action(MAIN_BRANCH_ID, "main", MAIN_BRANCH_ID, -1);
+
+        log->commit(MAIN_BRANCH_ID, -1, {&protocol, &metadata, &branch});
+
+        return log;
+
     }
 
     std::shared_ptr<deeplake::deeplog> deeplog::open(std::string path) {
@@ -29,40 +38,98 @@ namespace deeplake {
         return std::make_shared<deeplake::deeplog>(log);
     }
 
-    std::unique_ptr<deeplake::snapshot> deeplog::snapshot(const deeplake::branch &branch, const std::optional<long> &version) {
-        std::vector<std::filesystem::path> sorted_paths = list_files(branch, 0, version);
+    std::string deeplog::path() { return path_; }
 
-        std::vector<std::string> snapshot_files = {};
+    long deeplog::version() const {
+        return version(MAIN_BRANCH_ID);
+    }
 
-        for (const auto &path: sorted_paths) {
+    long deeplog::version(const std::string &branch_id) const {
+        return list_files(branch_id, 0, std::nullopt).version;
+    }
+
+    deeplog_state<std::shared_ptr<deeplake::protocol_action>> deeplog::protocol() const {
+        auto tx_files = list_files(MAIN_BRANCH_ID, 0, std::nullopt);
+
+        std::shared_ptr<protocol_action> protocol;
+
+        for (const auto &path: tx_files.data) {
+            std::ifstream ifs(path);
+
+            nlohmann::json jsonArray = nlohmann::json::parse(ifs);
+            for (auto &element: jsonArray) {
+                if (element.contains("protocol")) {
+                    auto parsed = deeplake::protocol_action(element);
+                    protocol = std::make_shared<protocol_action>(parsed);
+                }
+            }
+        }
+
+        return {protocol, tx_files.version};
+    }
+
+    deeplog_state<std::shared_ptr<deeplake::metadata_action>> deeplog::metadata() const {
+        auto tx_files = list_files(MAIN_BRANCH_ID, 0, std::nullopt);
+
+        std::shared_ptr<metadata_action> metadata;
+
+        for (const auto &path: tx_files.data) {
+            std::ifstream ifs(path);
+
+            nlohmann::json jsonArray = nlohmann::json::parse(ifs);
+            for (auto &element: jsonArray) {
+                if (element.contains("metadata")) {
+                    auto parsed = deeplake::metadata_action(element);
+                    metadata = std::make_shared<metadata_action>(parsed);
+                }
+            }
+        }
+
+        return {metadata, tx_files.version};
+    }
+
+    deeplog_state<std::vector<deeplake::add_file_action>> deeplog::data_files(const std::string &branch_id, const std::optional<long> &version) {
+        auto tx_files = list_files(branch_id, 0, version);
+
+        std::vector<add_file_action> data_files = {};
+
+        for (const auto &path: tx_files.data) {
             std::ifstream ifs(path);
 
             nlohmann::json jsonArray = nlohmann::json::parse(ifs);
             for (auto &element: jsonArray) {
                 if (element.contains("add")) {
                     auto add = deeplake::add_file_action(element);
-                    snapshot_files.push_back(add.path());
+                    data_files.push_back(add);
                 }
             }
         }
 
-        long snapshot_version = -1;
-        if (!sorted_paths.empty()) {
-            snapshot_version = file_version(sorted_paths.back());
+        return {std::move(data_files), tx_files.version};
+    }
+
+    deeplog_state<std::shared_ptr<std::vector<deeplake::create_branch_action>>> deeplog::branches() const {
+        auto tx_files = list_files(MAIN_BRANCH_ID, 0, std::nullopt);
+
+        std::shared_ptr<std::vector<create_branch_action>> branches = {};
+
+        for (const auto &path: tx_files.data) {
+            std::ifstream ifs(path);
+
+            nlohmann::json jsonArray = nlohmann::json::parse(ifs);
+            for (auto &element: jsonArray) {
+                if (element.contains("createBranch")) {
+                    auto parsed = deeplake::create_branch_action(element);
+                    branches->push_back(parsed);
+                }
+            }
         }
 
-        return std::make_unique<deeplake::snapshot>(deeplake::snapshot(branch, snapshot_version, snapshot_files, shared_from_this()));
+        return {branches, tx_files.version};
     }
 
-    std::shared_ptr<deeplake::protocol> deeplog::protocol() const {
-        return protocol_;
-    }
 
-    std::shared_ptr<deeplake::metadata> deeplog::metadata() const {
-        return metadata_;
-    }
-
-    void deeplog::commit(const deeplake::branch &branch,
+    void deeplog::commit(const std::string &branch_id,
                          const long &base_version,
                          const std::vector<deeplake::action *> &actions) {
         nlohmann::json commit_json;
@@ -76,7 +143,7 @@ namespace deeplake {
         std::ostringstream ss;
         ss << std::setw(20) << std::setfill('0') << (base_version + 1);
 
-        auto log_dir = path_ + "/_deeplake_log/" + branch.id() + "/";
+        auto log_dir = path_ + "/_deeplake_log/" + branch_id + "/";
 
         std::filesystem::create_directories(log_dir);
 
@@ -89,64 +156,55 @@ namespace deeplake {
 
         file << commit_json;
         file.close();
-
-        if (branch.is_main()) {
-            read_main();
-        }
-
-        //        dataset_->update();
     }
 
-    std::shared_ptr<std::vector<branch>> deeplog::all_branches() const {
-        return all_branches_;
-    }
+    deeplog_state<std::shared_ptr<deeplake::create_branch_action>> deeplog::branch_by_id(const std::string &branch_id) const {
+        auto all_branches = this->branches();
+        auto data = all_branches.data;
 
-    deeplake::branch deeplog::branch(const std::string branch_name) const {
-        auto branch = std::ranges::find_if(*all_branches_,
-                                           [branch_name](deeplake::branch b) { return b.name() == branch_name; });
-        if (branch == all_branches_->end()) {
-            throw std::runtime_error("Branch '" + branch_name + "' not found");
-        }
-        return *branch;
-    }
-
-    deeplake::branch deeplog::branch_by_id(const std::string branch_id) const {
-        auto branch = std::ranges::find_if(*all_branches_,
-                                           [branch_id](deeplake::branch b) { return b.id() == branch_id; });
-        if (branch == all_branches_->end()) {
+        auto branch = std::ranges::find_if(*data,
+                                           [branch_id](deeplake::create_branch_action b) { return b.id() == branch_id; });
+        if (branch == data->end()) {
             throw std::runtime_error("Branch id '" + branch_id + "' not found");
         }
-        return *branch;
+
+        return {std::make_shared<deeplake::create_branch_action>(*branch), all_branches.version};
     }
 
-    long deeplake::deeplog::branch_version(const deeplake::branch &branch) {
-        return file_version(list_files(branch, 0, std::nullopt).back());
-    }
+//    long deeplake::deeplog::branch_version(const deeplake::branch &branch) {
+//        return list_files(branch, 0, std::nullopt).version;
+//    }
 
-    std::vector<std::filesystem::path> deeplog::list_files(deeplake::branch branch,
-                                                           std::optional<long> from,
-                                                           std::optional<long> to) {
+    deeplog_state<std::vector<std::filesystem::path>> deeplog::list_files(const std::string &branch_id,
+                                                                          const std::optional<long> &from,
+                                                                          const std::optional<long> &to) const {
+        std::optional<long> next_from = from;
         std::vector<std::filesystem::path> return_files = {};
 
-        if (!branch.is_main()) {
-            for (const auto &file: list_files(branch_by_id(branch.from_id()), from, branch.from_version())) {
+        if (branch_id != MAIN_BRANCH_ID) {
+            auto branch_obj = branch_by_id(branch_id).data;
+            for (const auto &file: list_files(branch_id, from, branch_obj->from_version()).data) {
                 return_files.push_back(file);
             }
 
-            from = branch.from_version() + 1;
+            next_from = branch_obj->from_version() + 1;
         }
 
         std::set<std::filesystem::path> sorted_paths = {};
 
+        long higheset_version = -1;
         std::filesystem::path dir_path = {path_ + "/_deeplake_log/"};
         if (std::filesystem::exists(dir_path)) {
             for (const auto &entry: std::filesystem::directory_iterator(dir_path)) {
                 if (std::filesystem::is_regular_file(entry.path()) && entry.path().extension() == ".json") {
                     auto found_version = file_version(entry.path());
+                    if (higheset_version < found_version) {
+                        higheset_version = found_version;
+                    }
                     if (to.has_value() && found_version > to) {
                         continue;
                     }
-                    if (!from.has_value() || found_version >= from) {
+                    if (!next_from.has_value() || found_version >= next_from) {
                         sorted_paths.insert(entry.path());
                     }
                 }
@@ -157,36 +215,7 @@ namespace deeplake {
             return_files.push_back(path);
         }
 
-        return return_files;
-    }
-
-    void deeplog::read_main() {
-
-        std::vector<std::filesystem::path> sorted_paths = list_files(deeplake::main_branch(), 0, std::nullopt);
-        all_branches_ = std::make_shared<std::vector<deeplake::branch>>();
-        for (const auto &path: sorted_paths) {
-            std::ifstream ifs(path);
-
-            nlohmann::json jsonArray = nlohmann::json::parse(ifs);
-            for (auto &element: jsonArray) {
-                if (element.contains("protocol")) {
-                    auto protocol = deeplake::protocol_action(element);
-                    protocol_ = std::make_shared<deeplake::protocol>(
-                            deeplake::protocol(protocol.min_reader_version(), protocol.min_writer_version(), {},
-                                               {}));
-                } else if (element.contains("metadata")) {
-                    auto metadata = deeplake::metadata_action(element);
-                    metadata_ = std::make_shared<deeplake::metadata>(
-                            deeplake::metadata(metadata.id(), metadata.name(), metadata.description(),
-                                               metadata.created_time()));
-                } else if (element.contains("createBranch")) {
-                    auto action = deeplake::create_branch_action(element);
-                    all_branches_->push_back(
-                            deeplake::branch(action.id(), action.name(), action.from_id(), action.from_version()));
-                }
-            }
-        }
-
+        return deeplog_state(return_files, higheset_version);
     }
 
     long deeplog::file_version(const std::filesystem::path &path) const {
@@ -194,7 +223,4 @@ namespace deeplake {
                 .substr(0, path.filename().string().length() - 5);
         return std::stol(formatted_version);
     }
-
-
-    std::string deeplog::path() { return path_; }
 } // deeplake

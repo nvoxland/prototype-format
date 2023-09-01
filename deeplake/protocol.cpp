@@ -9,6 +9,12 @@ namespace deeplake {
             reader_features_(reader_features),
             writer_features_(writer_features) {}
 
+    protocol::protocol(const deeplake::protocol_action &action) :
+        min_reader_version_(action.min_reader_version()),
+        min_writer_version_(action.min_writer_version())
+    { }
+
+
     int deeplake::protocol::min_reader_version() {
         return min_reader_version_;
     }

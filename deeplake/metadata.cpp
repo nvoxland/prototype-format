@@ -7,6 +7,9 @@ namespace deeplake {
                                  long created_time
     ) : id_(id), name_(name), description_(description), created_time_(created_time) {}
 
+    metadata::metadata(const deeplake::metadata_action &action) :
+           id_(action.id()) { }
+
     std::string deeplake::metadata::id() {
         return id_;
     }

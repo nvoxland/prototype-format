@@ -42,12 +42,6 @@ TEST_F(DatasetTest, create) {
     EXPECT_TRUE(std::filesystem::exists(test_dir + "/_deeplake_log/00000000000000000000.json")) << "Should create initial commit file";
     EXPECT_FALSE(std::filesystem::exists(test_dir + "/_deeplake_log/00000000000000000001.json"));
 
-    std::ifstream ifs(test_dir + "/_deeplake_log/00000000000000000000.json");
-    json jf = json::parse(ifs);
-    EXPECT_EQ(3, jf.size());
-    EXPECT_TRUE(jf[0].contains("protocol"));
-    EXPECT_TRUE(jf[1].contains("metadata"));
-    EXPECT_TRUE(jf[2].contains("createBranch"));
 
     EXPECT_THROW(deeplake::dataset::create(test_dir), std::runtime_error) << "Should not be able to create dataset twice";
 

@@ -11,12 +11,13 @@ namespace deeplake {
 
         create_branch_action(const nlohmann::json &j);
 
-        std::string id();
+        std::string id() const;
 
-        std::string name();
+        std::string name() const;
 
-        std::string from_id();
-        long from_version();
+        std::string from_id() const;
+
+        long from_version() const;
 
         void to_json(nlohmann::json &json) override;
 
