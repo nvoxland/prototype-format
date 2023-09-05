@@ -1,3 +1,5 @@
+#include <arrow/type_fwd.h>
+#include <arrow/api.h>
 #include "protocol_action.hpp"
 
 namespace deeplake {
@@ -20,5 +22,27 @@ namespace deeplake {
     void deeplake::protocol_action::to_json(nlohmann::json &j) {
         j["protocol"]["minReaderVersion"] = min_reader_version_;
         j["protocol"]["minWriterVersion"] = min_writer_version_;
+    }
+
+    arrow::Status protocol_action::append(const std::shared_ptr<arrow::StructBuilder> &builder) {
+        ARROW_RETURN_NOT_OK(builder->field_builder(0)->AppendScalar(arrow::Int32Scalar{min_reader_version_}));
+        ARROW_RETURN_NOT_OK(builder->field_builder(1)->AppendScalar(arrow::Int32Scalar{min_writer_version_}));
+
+        ARROW_RETURN_NOT_OK(builder->Append());
+        return arrow::Status::OK();
+    }
+
+
+    std::shared_ptr<arrow::StructBuilder> deeplake::protocol_action::arrow_array() {
+        auto protocol_struct = arrow::struct_({
+                                                      arrow::field("minReaderVersion", arrow::int32()),
+                                                      arrow::field("minWriterVersion", arrow::int32()),
+                                              });
+
+        return std::make_shared<arrow::StructBuilder>(std::move(arrow::StructBuilder(protocol_struct, arrow::default_memory_pool(), {
+                std::make_shared<arrow::Int32Builder>(arrow::Int32Builder()),
+                std::make_shared<arrow::Int32Builder>(arrow::Int32Builder()),
+        })));
+
     }
 }

@@ -2,11 +2,14 @@
 #define DEEPLAKE_PROTOCOL_ACTION_HPP
 
 #include "action.hpp"
+#include <arrow/api.h>
 
 namespace deeplake {
 
     class protocol_action : public action {
     public:
+        static std::shared_ptr<arrow::StructBuilder> arrow_array();
+
         protocol_action(int min_reader_version, int min_writer_version);
 
         protocol_action(const nlohmann::json &j);
@@ -15,8 +18,9 @@ namespace deeplake {
 
         int min_writer_version() const;
 
-        virtual void to_json(nlohmann::json &json) override;
+        void to_json(nlohmann::json &json) override;
 
+        arrow::Status append(const std::shared_ptr<arrow::StructBuilder> &builder) override;
 
     private:
         int min_reader_version_;

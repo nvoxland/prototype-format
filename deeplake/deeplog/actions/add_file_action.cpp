@@ -24,4 +24,9 @@ namespace deeplake {
         j["add"]["modificationTime"] = modification_time_;
         j["add"]["dataChange"] = data_change_;
     }
+
+    arrow::Status add_file_action::append(const std::shared_ptr<arrow::StructBuilder> &builder) {
+        return arrow::Status::OK();
+    }
+
 }

@@ -17,7 +17,9 @@ namespace deeplake {
 
         long modification_time() const;
 
-        virtual void to_json(nlohmann::json &json) override;
+        void to_json(nlohmann::json &json) override;
+
+        arrow::Status append(const std::shared_ptr<arrow::StructBuilder> &builder) override;
 
     private:
         std::string path_;

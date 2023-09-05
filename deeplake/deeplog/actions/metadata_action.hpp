@@ -5,6 +5,7 @@
 #include "uuid.h"
 #include <random>
 #include "nlohmann/json.hpp"
+#include <arrow/api.h>
 
 namespace deeplake {
 
@@ -23,8 +24,11 @@ namespace deeplake {
 
         long created_time() const;
 
-        virtual void to_json(nlohmann::json &json) override;
+        void to_json(nlohmann::json &json) override;
 
+        arrow::Status append(const std::shared_ptr<arrow::StructBuilder> &builder) override;
+
+        static std::shared_ptr<arrow::StructBuilder> arrow_array();
 
     private:
         std::string id_;

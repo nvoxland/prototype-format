@@ -15,6 +15,10 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest json stduuid)
 
+find_package(Arrow REQUIRED)
+find_package(Parquet REQUIRED)
+find_package(ArrowDataset REQUIRED)
+
 enable_testing()
 
 add_library(deeplake
@@ -32,6 +36,8 @@ add_library(deeplake
         deeplog/actions/remove_file_action.hpp
         deeplog/deeplog.cpp
         deeplog/deeplog.hpp
+        deeplog/last_checkpoint.cpp
+        deeplog/last_checkpoint.hpp
 )
 
 add_executable(
@@ -44,9 +50,10 @@ add_executable(
         deeplog/actions/create_branch_action.test.cpp
         deeplog/actions/remove_file_action.test.cpp
         deeplog/deeplog.test.cpp
+        deeplog/last_checkpoint.test.cpp
 )
 
-target_link_libraries(deeplake nlohmann_json::nlohmann_json stduuid)
+target_link_libraries(deeplake nlohmann_json::nlohmann_json stduuid Arrow::arrow_static Parquet::parquet_static ArrowDataset::arrow_dataset_static)
 target_link_libraries(runTests
         deeplake
         GTest::gtest_main

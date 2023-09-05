@@ -1,5 +1,6 @@
 #include "metadata_action.hpp"
 #include "nlohmann/json.hpp"
+#include <arrow/api.h>
 
 using json = nlohmann::json;
 
@@ -56,6 +57,41 @@ namespace deeplake {
             j["metadata"]["description"] = json::value_t::null;
         }
         j["metadata"]["createdTime"] = created_time_;
+
+    }
+
+    arrow::Status metadata_action::append(const std::shared_ptr<arrow::StructBuilder> &builder) {
+        ARROW_RETURN_NOT_OK(builder->field_builder(0)->AppendScalar(arrow::StringScalar{id_}));
+        if (name_.has_value()) {
+            ARROW_RETURN_NOT_OK(builder->field_builder(1)->AppendScalar(arrow::StringScalar{name_.value()}));
+        } else {
+            ARROW_RETURN_NOT_OK(builder->field_builder(1)->AppendNull());
+        }
+        if (description_.has_value()) {
+            ARROW_RETURN_NOT_OK(builder->field_builder(2)->AppendScalar(arrow::StringScalar{description_.value()}));
+        } else {
+            ARROW_RETURN_NOT_OK(builder->field_builder(2)->AppendNull());
+        }
+        ARROW_RETURN_NOT_OK(builder->field_builder(3)->AppendScalar(arrow::Int64Scalar{created_time_}));
+
+        ARROW_RETURN_NOT_OK(builder->Append());
+        return arrow::Status::OK();
+    }
+
+    std::shared_ptr<arrow::StructBuilder> deeplake::metadata_action::arrow_array() {
+        auto protocol_struct = arrow::struct_({
+                                                      arrow::field("id", arrow::utf8()),
+                                                      arrow::field("name", arrow::utf8()),
+                                                      arrow::field("description", arrow::utf8()),
+                                                      arrow::field("createdTime", arrow::int64()),
+                                              });
+
+        return std::make_shared<arrow::StructBuilder>(std::move(arrow::StructBuilder(protocol_struct, arrow::default_memory_pool(), {
+                std::make_shared<arrow::StringBuilder>(arrow::StringBuilder()),
+                std::make_shared<arrow::StringBuilder>(arrow::StringBuilder()),
+                std::make_shared<arrow::StringBuilder>(arrow::StringBuilder()),
+                std::make_shared<arrow::Int64Builder>(arrow::Int64Builder ()),
+        })));
 
     }
 

@@ -22,6 +22,10 @@ namespace deeplake {
         j["createBranch"]["fromVersion"] = from_version_;
     }
 
+    arrow::Status create_branch_action::append(const std::shared_ptr<arrow::StructBuilder> &builder) {
+        return arrow::Status::OK();
+    }
+
     std::string create_branch_action::id() const { return id_; }
 
     std::string create_branch_action::name() const { return name_; }

@@ -2,6 +2,7 @@
 #define DEEPLAKE_DEEPLOG_HPP
 
 #include <string>
+#include <arrow/status.h>
 #include "actions/add_file_action.hpp"
 #include "../snapshot/snapshot.hpp"
 #include "actions/protocol_action.hpp"
@@ -48,12 +49,16 @@ namespace deeplake {
                     const long &base_version,
                     const std::vector<deeplake::action *> &actions);
 
+        void checkpoint();
+
     private:
 
         //only created through open() etc.
         deeplog(std::string path);
 
         deeplog_state<std::vector<std::filesystem::path>> list_files(const std::string &branch_id, const std::optional<long> &from, const std::optional<long> &to) const;
+
+        arrow::Status write_checkpoint();
 
         long file_version(const std::filesystem::path &path) const;
 

@@ -1,11 +1,21 @@
 #include "deeplog.hpp"
 #include <filesystem>
+#include <iostream>
 #include <set>
 #include <fstream>
 #include "nlohmann/json.hpp"
 #include "actions/protocol_action.hpp"
 #include "actions/metadata_action.hpp"
 #include "actions/create_branch_action.hpp"
+#include "arrow/io/file.h"
+#include "parquet/stream_writer.h"
+#include "parquet/arrow/writer.h"
+#include "arrow/util/type_fwd.h"
+#include "arrow/table.h"
+#include "arrow/array.h"
+#include "arrow/builder.h"
+#include "arrow/api.h"
+#include "last_checkpoint.hpp"
 
 namespace deeplake {
 
@@ -190,10 +200,10 @@ namespace deeplake {
             next_from = branch_obj->from_version() + 1;
         }
 
-        std::set<std::filesystem::path> sorted_paths = {};
+        std::set < std::filesystem::path > sorted_paths = {};
 
         long higheset_version = -1;
-        std::filesystem::path dir_path = {path_ + "/_deeplake_log/"};
+        std::filesystem::path dir_path = {path_ + "/_deeplake_log/" + branch_id};
         if (std::filesystem::exists(dir_path)) {
             for (const auto &entry: std::filesystem::directory_iterator(dir_path)) {
                 if (std::filesystem::is_regular_file(entry.path()) && entry.path().extension() == ".json") {
@@ -223,4 +233,54 @@ namespace deeplake {
                 .substr(0, path.filename().string().length() - 5);
         return std::stol(formatted_version);
     }
+
+    void deeplog::checkpoint() {
+        auto status = write_checkpoint();
+
+        if (!status.ok()) {
+            return;
+        }
+        nlohmann::json checkpoint_json = last_checkpoint(21, 3013);
+
+        auto checkpoint_path = path_ + "/_deeplake_log/_last_checkpoint.json";
+        std::fstream file(checkpoint_path, std::ios::out);
+        if (!file.is_open()) {
+            throw std::runtime_error("Error opening file: " + checkpoint_path);
+        }
+
+        file << checkpoint_json;
+        file.close();
+    }
+
+    arrow::Status deeplog::write_checkpoint() {
+        auto protocol_builder = deeplake::protocol_action::arrow_array();
+        auto metadata_builder = deeplake::metadata_action::arrow_array();
+
+        ARROW_RETURN_NOT_OK(protocol().data->append(protocol_builder));
+        ARROW_RETURN_NOT_OK(metadata_builder->AppendNull());
+
+        ARROW_RETURN_NOT_OK(protocol_builder->AppendNull());
+        ARROW_RETURN_NOT_OK(metadata().data->append(metadata_builder));
+
+        std::shared_ptr<arrow::Array> protocol_array, metadata_array;
+        ARROW_RETURN_NOT_OK(protocol_builder->Finish(&protocol_array));
+        ARROW_RETURN_NOT_OK(metadata_builder->Finish(&metadata_array));
+
+        auto schema = std::make_shared<arrow::Schema>(arrow::FieldVector{
+                arrow::field("protocol", protocol_builder->type()),
+                arrow::field("metadata", metadata_builder->type()),
+        });
+        const auto protocol_table = arrow::Table::Make(schema, {protocol_array, metadata_array});
+
+        std::shared_ptr<parquet::WriterProperties> props = parquet::WriterProperties::Builder().compression(arrow::Compression::SNAPPY)->build();
+        std::shared_ptr<parquet::ArrowWriterProperties> arrow_props = parquet::ArrowWriterProperties::Builder().store_schema()->build();
+
+        std::shared_ptr<arrow::io::FileOutputStream> outfile;
+        ARROW_ASSIGN_OR_RAISE(outfile, arrow::io::FileOutputStream::Open(path_ + "/_deeplake_log/00000000000000000021.checkpoint.parquet"));
+//
+        ARROW_RETURN_NOT_OK(parquet::arrow::WriteTable(*protocol_table, arrow::default_memory_pool(), outfile, 3, props, arrow_props));
+
+        return arrow::Status::OK();
+    }
+
 } // deeplake

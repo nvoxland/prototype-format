@@ -3,7 +3,9 @@
 #include "deeplog.hpp"
 #include "actions/protocol_action.hpp"
 #include "actions/metadata_action.hpp"
+#include "last_checkpoint.hpp"
 #include <fstream>
+#include <string>
 #include <nlohmann/json.hpp>
 
 class DeeplogTest : public ::testing::Test {
@@ -160,4 +162,45 @@ TEST_F(DeeplogTest, commit_create_branch) {
 
     EXPECT_EQ("123", (*branches)[1].id());
     EXPECT_EQ("branch1", (*branches)[1].name());
+}
+
+TEST_F(DeeplogTest, checkpoint) {
+    auto log = deeplake::deeplog::create(test_dir);
+
+    auto original_metadata = log->metadata().data;
+    for (int i=0; i<=20; ++i) {
+        auto action = deeplake::metadata_action(original_metadata->id(), "name " + std::to_string(i), "desc "+std::to_string(i), original_metadata->created_time());
+        log->commit(deeplake::MAIN_BRANCH_ID, log->version(deeplake::MAIN_BRANCH_ID), {&action});
+    }
+
+    EXPECT_EQ(21, log->version());
+    EXPECT_EQ(22, list_log_files().size());
+
+    EXPECT_EQ(original_metadata->id(), log->metadata().data->id());
+    EXPECT_EQ(original_metadata->created_time(), log->metadata().data->created_time());
+    EXPECT_EQ("name 20", log->metadata().data->name());
+    EXPECT_EQ("desc 20", log->metadata().data->description());
+
+    log->checkpoint();
+
+    EXPECT_TRUE(list_log_files().contains("00000000000000000021.checkpoint.parquet"));
+    EXPECT_TRUE(list_log_files().contains("_last_checkpoint.json"));
+
+    std::ifstream ifs(test_dir + "/_deeplake_log/_last_checkpoint.json");
+    deeplake::last_checkpoint checkpoint_content = nlohmann::json::parse(ifs).template get<deeplake::last_checkpoint>();
+    EXPECT_EQ(21, checkpoint_content.version);
+
+
+    //delete json files so loads after checkpoint doesn't use it
+    for (auto file : list_log_files()) {
+        if (file.ends_with(".json")) {
+            std::filesystem::remove(test_dir+"/_deeplake_log/"+file);
+        }
+    }
+    EXPECT_FALSE(list_log_files().contains("00000000000000000000.json"));
+
+    auto new_log = deeplake::deeplog::open(test_dir);
+    EXPECT_EQ(21, new_log->version());
+    EXPECT_EQ(original_metadata->id(), new_log->metadata().data->id());
+    EXPECT_EQ("name 20", new_log->metadata().data->name());
 }
