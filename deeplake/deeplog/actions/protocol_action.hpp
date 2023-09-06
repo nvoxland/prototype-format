@@ -14,6 +14,8 @@ namespace deeplake {
 
         protocol_action(const nlohmann::json &j);
 
+        protocol_action(const std::shared_ptr<arrow::StructScalar> &struct_scalar);
+
         int min_reader_version() const;
 
         int min_writer_version() const;

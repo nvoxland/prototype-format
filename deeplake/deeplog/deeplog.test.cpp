@@ -51,8 +51,8 @@ TEST_F(DeeplogTest, create) {
     EXPECT_TRUE(jf[2].contains("createBranch"));
 
 
-    EXPECT_EQ(1, log->branches().data->size());
-    EXPECT_EQ("main", log->branches().data->begin()->name());
+    EXPECT_EQ(1, log->branches().data.size());
+    EXPECT_EQ("main", log->branches().data.begin()->get()->name());
     EXPECT_EQ(4, log->protocol().data->min_reader_version());
     EXPECT_EQ(4, log->protocol().data->min_writer_version());
 
@@ -137,9 +137,9 @@ TEST_F(DeeplogTest, commit_add_file) {
     const auto &files = log->data_files(deeplake::MAIN_BRANCH_ID, std::nullopt).data;
 
     EXPECT_EQ(1, files.size());
-    EXPECT_EQ("my/path", files[0].path());
-    EXPECT_EQ(3, files[0].size());
-    EXPECT_EQ(45, files[0].modification_time());
+    EXPECT_EQ("my/path", files[0]->path());
+    EXPECT_EQ(3, files[0]->size());
+    EXPECT_EQ(45, files[0]->modification_time());
 }
 
 TEST_F(DeeplogTest, commit_create_branch) {
@@ -156,12 +156,12 @@ TEST_F(DeeplogTest, commit_create_branch) {
 
     const auto &branches = log->branches().data;
 
-    EXPECT_EQ(2, branches->size());
-    EXPECT_EQ("", (*branches)[0].id());
-    EXPECT_EQ("main", (*branches)[0].name());
+    EXPECT_EQ(2, branches.size());
+    EXPECT_EQ("", (branches)[0]->id());
+    EXPECT_EQ("main", (branches)[0]->name());
 
-    EXPECT_EQ("123", (*branches)[1].id());
-    EXPECT_EQ("branch1", (*branches)[1].name());
+    EXPECT_EQ("123", (branches)[1]->id());
+    EXPECT_EQ("branch1", (branches)[1]->name());
 }
 
 TEST_F(DeeplogTest, checkpoint) {
@@ -193,7 +193,7 @@ TEST_F(DeeplogTest, checkpoint) {
 
     //delete json files so loads after checkpoint doesn't use it
     for (auto file : list_log_files()) {
-        if (file.ends_with(".json")) {
+        if (file != "_last_checkpoint.json" && file.ends_with(".json")) {
             std::filesystem::remove(test_dir+"/_deeplake_log/"+file);
         }
     }

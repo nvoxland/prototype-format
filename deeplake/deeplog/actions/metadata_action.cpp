@@ -26,6 +26,14 @@ namespace deeplake {
         base.at("createdTime").get_to(created_time_);
     }
 
+    metadata_action::metadata_action(const std::shared_ptr<arrow::StructScalar> &value) {
+        id_ = reinterpret_pointer_cast<arrow::StringScalar>(value->field("id").ValueOrDie())->view();
+        name_ = reinterpret_pointer_cast<arrow::StringScalar>(value->field("name").ValueOrDie())->view();
+        description_ = reinterpret_pointer_cast<arrow::StringScalar>(value->field("description").ValueOrDie())->view();
+        created_time_ = reinterpret_pointer_cast<arrow::Int32Scalar>(value->field("description").ValueOrDie())->value;
+    }
+
+
 
     std::string deeplake::metadata_action::id() const {
         return id_;

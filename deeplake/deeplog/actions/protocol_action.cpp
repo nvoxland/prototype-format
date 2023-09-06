@@ -11,6 +11,11 @@ namespace deeplake {
         j.at("protocol").at("minWriterVersion").get_to(min_writer_version_);
     }
 
+    protocol_action::protocol_action(const std::shared_ptr<arrow::StructScalar> &value) {
+        min_reader_version_ = reinterpret_pointer_cast<arrow::Int32Scalar>(value->field("minReaderVersion").ValueOrDie())->value;
+        min_writer_version_ = reinterpret_pointer_cast<arrow::Int32Scalar>(value->field("minWriterVersion").ValueOrDie())->value;
+    }
+
     int protocol_action::min_reader_version() const {
         return min_reader_version_;
     }

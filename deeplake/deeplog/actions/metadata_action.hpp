@@ -16,6 +16,8 @@ namespace deeplake {
 
         metadata_action(const nlohmann::json &j);
 
+        metadata_action(const std::shared_ptr<arrow::StructScalar> &struct_scalar);
+
         std::string id() const;
 
         std::optional<std::string> name() const;

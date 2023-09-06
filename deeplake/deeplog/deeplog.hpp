@@ -25,9 +25,9 @@ namespace deeplake {
 
     class deeplog {
     public:
-        static std::shared_ptr<deeplog> create(std::string path);
+        static std::shared_ptr<deeplog> create(const std::string &path);
 
-        static std::shared_ptr<deeplog> open(std::string path);
+        static std::shared_ptr<deeplog> open(const std::string &path);
 
         std::string path();
 
@@ -39,11 +39,11 @@ namespace deeplake {
 
         deeplog_state<std::shared_ptr<deeplake::metadata_action>> metadata() const;
 
-        deeplog_state<std::shared_ptr<std::vector<deeplake::create_branch_action>>> branches() const;
+        deeplog_state<std::vector<std::shared_ptr<deeplake::create_branch_action>>> branches() const;
 
         deeplog_state<std::shared_ptr<deeplake::create_branch_action>> branch_by_id(const std::string &branch_id) const;
 
-        deeplog_state<std::vector<deeplake::add_file_action>> data_files(const std::string &branch_id, const std::optional<long> &version);
+        deeplog_state<std::vector<std::shared_ptr<deeplake::add_file_action>>> data_files(const std::string &branch_id, const std::optional<long> &version);
 
         void commit(const std::string &branch_id,
                     const long &base_version,
@@ -56,7 +56,9 @@ namespace deeplake {
         //only created through open() etc.
         deeplog(std::string path);
 
-        deeplog_state<std::vector<std::filesystem::path>> list_files(const std::string &branch_id, const std::optional<long> &from, const std::optional<long> &to) const;
+        deeplog_state<std::vector<std::shared_ptr<action>>> list_actions(const std::string &branch_id, const long &from, const std::optional<long> &to) const;
+
+        arrow::Status read_checkpoint(const std::string &dir_path, const long &version, std::vector<std::shared_ptr<action>> &actions) const;
 
         arrow::Status write_checkpoint();
 

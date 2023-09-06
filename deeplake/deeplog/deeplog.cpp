@@ -10,6 +10,7 @@
 #include "arrow/io/file.h"
 #include "parquet/stream_writer.h"
 #include "parquet/arrow/writer.h"
+#include "parquet/arrow/reader.h"
 #include "arrow/util/type_fwd.h"
 #include "arrow/table.h"
 #include "arrow/array.h"
@@ -21,7 +22,7 @@ namespace deeplake {
 
     deeplog::deeplog(std::string path) : path_(path) {};
 
-    std::shared_ptr<deeplake::deeplog> deeplog::create(std::string path) {
+    std::shared_ptr<deeplake::deeplog> deeplog::create(const std::string &path) {
         if (std::filesystem::exists(path)) {
             throw std::runtime_error("'" + path + "' already exists");
         }
@@ -43,9 +44,8 @@ namespace deeplake {
 
     }
 
-    std::shared_ptr<deeplake::deeplog> deeplog::open(std::string path) {
-        const deeplake::deeplog &log = deeplog(path);
-        return std::make_shared<deeplake::deeplog>(log);
+    std::shared_ptr<deeplake::deeplog> deeplog::open(const std::string &path) {
+        return std::make_shared<deeplake::deeplog>(deeplog(path));
     }
 
     std::string deeplog::path() { return path_; }
@@ -55,87 +55,67 @@ namespace deeplake {
     }
 
     long deeplog::version(const std::string &branch_id) const {
-        return list_files(branch_id, 0, std::nullopt).version;
+        return list_actions(branch_id, 0, std::nullopt).version;
     }
 
     deeplog_state<std::shared_ptr<deeplake::protocol_action>> deeplog::protocol() const {
-        auto tx_files = list_files(MAIN_BRANCH_ID, 0, std::nullopt);
+        auto actions = list_actions(MAIN_BRANCH_ID, 0, std::nullopt);
 
         std::shared_ptr<protocol_action> protocol;
 
-        for (const auto &path: tx_files.data) {
-            std::ifstream ifs(path);
-
-            nlohmann::json jsonArray = nlohmann::json::parse(ifs);
-            for (auto &element: jsonArray) {
-                if (element.contains("protocol")) {
-                    auto parsed = deeplake::protocol_action(element);
-                    protocol = std::make_shared<protocol_action>(parsed);
-                }
+        for (auto action: actions.data) {
+            auto casted = std::dynamic_pointer_cast<protocol_action>(action);
+            if (casted != nullptr) {
+                protocol = casted;
             }
         }
 
-        return {protocol, tx_files.version};
+        return {protocol, actions.version};
     }
 
     deeplog_state<std::shared_ptr<deeplake::metadata_action>> deeplog::metadata() const {
-        auto tx_files = list_files(MAIN_BRANCH_ID, 0, std::nullopt);
+        auto actions = list_actions(MAIN_BRANCH_ID, 0, std::nullopt);
 
         std::shared_ptr<metadata_action> metadata;
 
-        for (const auto &path: tx_files.data) {
-            std::ifstream ifs(path);
-
-            nlohmann::json jsonArray = nlohmann::json::parse(ifs);
-            for (auto &element: jsonArray) {
-                if (element.contains("metadata")) {
-                    auto parsed = deeplake::metadata_action(element);
-                    metadata = std::make_shared<metadata_action>(parsed);
-                }
+        for (auto action: actions.data) {
+            auto casted = std::dynamic_pointer_cast<metadata_action>(action);
+            if (casted != nullptr) {
+                metadata = casted;
             }
         }
 
-        return {metadata, tx_files.version};
+        return {metadata, actions.version};
     }
 
-    deeplog_state<std::vector<deeplake::add_file_action>> deeplog::data_files(const std::string &branch_id, const std::optional<long> &version) {
-        auto tx_files = list_files(branch_id, 0, version);
+    deeplog_state<std::vector<std::shared_ptr<deeplake::add_file_action>>> deeplog::data_files(const std::string &branch_id, const std::optional<long> &version) {
+        auto actions = list_actions(MAIN_BRANCH_ID, 0, std::nullopt);
 
-        std::vector<add_file_action> data_files = {};
+        std::vector<std::shared_ptr<add_file_action>> branches = {};
 
-        for (const auto &path: tx_files.data) {
-            std::ifstream ifs(path);
-
-            nlohmann::json jsonArray = nlohmann::json::parse(ifs);
-            for (auto &element: jsonArray) {
-                if (element.contains("add")) {
-                    auto add = deeplake::add_file_action(element);
-                    data_files.push_back(add);
-                }
+        for (const auto action: actions.data) {
+            auto casted = std::dynamic_pointer_cast<add_file_action>(action);
+            if (casted != nullptr) {
+                branches.push_back(casted);
             }
         }
 
-        return {std::move(data_files), tx_files.version};
+        return {std::vector<std::shared_ptr<add_file_action>>(branches), actions.version};
     }
 
-    deeplog_state<std::shared_ptr<std::vector<deeplake::create_branch_action>>> deeplog::branches() const {
-        auto tx_files = list_files(MAIN_BRANCH_ID, 0, std::nullopt);
+    deeplog_state<std::vector<std::shared_ptr<deeplake::create_branch_action>>> deeplog::branches() const {
+        auto actions = list_actions(MAIN_BRANCH_ID, 0, std::nullopt);
 
-        std::vector<create_branch_action> branches = {};
+        std::vector<std::shared_ptr<create_branch_action>> branches = {};
 
-        for (const auto &path: tx_files.data) {
-            std::ifstream ifs(path);
-
-            nlohmann::json jsonArray = nlohmann::json::parse(ifs);
-            for (auto &element: jsonArray) {
-                if (element.contains("createBranch")) {
-                    auto parsed = deeplake::create_branch_action(element);
-                    branches.push_back(parsed);
-                }
+        for (const auto action: actions.data) {
+            auto casted = std::dynamic_pointer_cast<create_branch_action>(action);
+            if (casted != nullptr) {
+                branches.push_back(casted);
             }
         }
 
-        return {std::make_shared<std::vector<create_branch_action>>(branches), tx_files.version};
+        return {std::vector<std::shared_ptr<create_branch_action>>(branches), actions.version};
     }
 
 
@@ -172,29 +152,40 @@ namespace deeplake {
         auto all_branches = this->branches();
         auto data = all_branches.data;
 
-        auto branch = std::ranges::find_if(*data,
-                                           [branch_id](deeplake::create_branch_action b) { return b.id() == branch_id; });
-        if (branch == data->end()) {
+        auto branch = std::ranges::find_if(data,
+                                           [branch_id](std::shared_ptr<deeplake::create_branch_action> b) { return b->id() == branch_id; });
+        if (branch == data.end()) {
             throw std::runtime_error("Branch id '" + branch_id + "' not found");
         }
 
-        return {std::make_shared<deeplake::create_branch_action>(*branch), all_branches.version};
+        return {*branch, all_branches.version};
     }
 
-//    long deeplake::deeplog::branch_version(const deeplake::branch &branch) {
-//        return list_files(branch, 0, std::nullopt).version;
-//    }
-
-    deeplog_state<std::vector<std::filesystem::path>> deeplog::list_files(const std::string &branch_id,
-                                                                          const std::optional<long> &from,
+    deeplog_state<std::vector<std::shared_ptr<action>>> deeplog::list_actions(const std::string &branch_id,
+                                                                          const long &from,
                                                                           const std::optional<long> &to) const {
+        long higheset_version = -1;
+        std::vector<std::shared_ptr<action>> return_actions = {};
+
+        const std::filesystem::path dir_path = {path_ + "/_deeplake_log/" + branch_id};
+
+        std::filesystem::path last_checkpoint_path = {dir_path.string() + "/_last_checkpoint.json"};
+        if (std::filesystem::exists(last_checkpoint_path)) {
+            auto last_checkpoint_stream = std::ifstream(last_checkpoint_path);
+            nlohmann::json last_checkpoint_json = nlohmann::json::parse(last_checkpoint_stream);
+            auto checkpoint = last_checkpoint(last_checkpoint_json);
+
+            auto status = read_checkpoint(dir_path.string(), checkpoint.version, return_actions);
+            higheset_version = checkpoint.version;
+        }
+
+
         std::optional<long> next_from = from;
-        std::vector<std::filesystem::path> return_files = {};
 
         if (branch_id != MAIN_BRANCH_ID) {
             auto branch_obj = branch_by_id(branch_id).data;
-            for (const auto &file: list_files(branch_id, from, branch_obj->from_version()).data) {
-                return_files.push_back(file);
+            for (const auto &action: list_actions(branch_id, from, branch_obj->from_version()).data) {
+                return_actions.push_back(action);
             }
 
             next_from = branch_obj->from_version() + 1;
@@ -202,11 +193,9 @@ namespace deeplake {
 
         std::set < std::filesystem::path > sorted_paths = {};
 
-        long higheset_version = -1;
-        std::filesystem::path dir_path = {path_ + "/_deeplake_log/" + branch_id};
         if (std::filesystem::exists(dir_path)) {
             for (const auto &entry: std::filesystem::directory_iterator(dir_path)) {
-                if (std::filesystem::is_regular_file(entry.path()) && entry.path().extension() == ".json") {
+                if (std::filesystem::is_regular_file(entry.path()) && entry.path().extension() == ".json" && !entry.path().filename().string().starts_with("_")) {
                     auto found_version = file_version(entry.path());
                     if (higheset_version < found_version) {
                         higheset_version = found_version;
@@ -222,10 +211,23 @@ namespace deeplake {
         }
 
         for (const auto &path: sorted_paths) {
-            return_files.push_back(path);
+            std::ifstream ifs(path);
+
+            nlohmann::json jsonArray = nlohmann::json::parse(ifs);
+            for (auto &element: jsonArray) {
+                if (element.contains("add")) {
+                    return_actions.push_back(std::make_shared<add_file_action>(deeplake::add_file_action(element)));
+                } else if (element.contains("createBranch")) {
+                    return_actions.push_back(std::make_shared<create_branch_action>(deeplake::create_branch_action(element)));
+                } else if (element.contains("protocol")) {
+                    return_actions.push_back(std::make_shared<protocol_action>(deeplake::protocol_action(element)));
+                } else if (element.contains("metadata")) {
+                    return_actions.push_back(std::make_shared<metadata_action>(deeplake::metadata_action(element)));
+                }
+            }
         }
 
-        return deeplog_state(return_files, higheset_version);
+        return deeplog_state(return_actions, higheset_version);
     }
 
     long deeplog::file_version(const std::filesystem::path &path) const {
@@ -250,6 +252,48 @@ namespace deeplake {
 
         file << checkpoint_json;
         file.close();
+    }
+
+    arrow::Status deeplog::read_checkpoint(const std::string &dir_path, const long &version, std::vector<std::shared_ptr<deeplake::action>> &actions) const {
+        std::ostringstream ss;
+        ss << std::setw(20) << std::setfill('0') << (version);
+
+        auto reader_properties = parquet::ReaderProperties(arrow::default_memory_pool());
+        reader_properties.set_buffer_size(4096 * 4);
+        reader_properties.enable_buffered_stream();
+
+        parquet::arrow::FileReaderBuilder reader_builder;
+        ARROW_RETURN_NOT_OK(reader_builder.OpenFile(dir_path + "/" + ss.str() + ".checkpoint.parquet", false, reader_properties));
+        reader_builder.memory_pool(arrow::default_memory_pool());
+
+        std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
+        ARROW_ASSIGN_OR_RAISE(arrow_reader, reader_builder.Build());
+
+        std::shared_ptr<arrow::RecordBatchReader> rb_reader;
+        ARROW_RETURN_NOT_OK(arrow_reader->GetRecordBatchReader(&rb_reader));
+
+        for (arrow::Result<std::shared_ptr<arrow::RecordBatch>> maybe_batch: *rb_reader) {
+            std::shared_ptr<arrow::RecordBatch> batch;
+            ARROW_ASSIGN_OR_RAISE(batch, maybe_batch);
+
+            for (auto i = 0; i < batch->num_rows(); ++i) {
+                if (!batch->GetColumnByName("protocol")->data()->IsNull(i)) {
+                    std::shared_ptr<arrow::Scalar> val;
+                    ARROW_ASSIGN_OR_RAISE(val, batch->GetColumnByName("protocol")->GetScalar(i));
+
+                    actions.push_back(std::make_shared<deeplake::protocol_action>(protocol_action(reinterpret_pointer_cast<arrow::StructScalar>(val))));
+                }
+
+                if (!batch->GetColumnByName("metadata")->data()->IsNull(i)) {
+                    std::shared_ptr<arrow::Scalar> val;
+                    ARROW_ASSIGN_OR_RAISE(val, batch->GetColumnByName("metadata")->GetScalar(i));
+
+                    actions.push_back(std::make_shared<deeplake::metadata_action>(metadata_action(reinterpret_pointer_cast<arrow::StructScalar>(val))));
+                }
+            }
+        }
+
+        return arrow::Status::OK();
     }
 
     arrow::Status deeplog::write_checkpoint() {
