@@ -29,7 +29,7 @@ namespace deeplake {
         j["protocol"]["minWriterVersion"] = min_writer_version_;
     }
 
-    arrow::Status protocol_action::append(const std::shared_ptr<arrow::StructBuilder> &builder) {
+    arrow::Status protocol_action::append_to(const std::shared_ptr<arrow::StructBuilder> &builder) {
         ARROW_RETURN_NOT_OK(builder->field_builder(0)->AppendScalar(arrow::Int32Scalar{min_reader_version_}));
         ARROW_RETURN_NOT_OK(builder->field_builder(1)->AppendScalar(arrow::Int32Scalar{min_writer_version_}));
 

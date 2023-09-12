@@ -49,7 +49,7 @@ namespace deeplake {
                     const long &base_version,
                     const std::vector<deeplake::action *> &actions);
 
-        void checkpoint();
+        void checkpoint(const std::string &branch_id);
 
     private:
 
@@ -60,7 +60,7 @@ namespace deeplake {
 
         arrow::Status read_checkpoint(const std::string &dir_path, const long &version, std::vector<std::shared_ptr<action>> &actions) const;
 
-        arrow::Status write_checkpoint();
+        arrow::Status write_checkpoint(const std::string &branch_id, const long &version);
 
         long file_version(const std::filesystem::path &path) const;
 

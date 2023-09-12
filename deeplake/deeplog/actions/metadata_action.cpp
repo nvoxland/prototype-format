@@ -68,7 +68,7 @@ namespace deeplake {
 
     }
 
-    arrow::Status metadata_action::append(const std::shared_ptr<arrow::StructBuilder> &builder) {
+    arrow::Status metadata_action::append_to(const std::shared_ptr<arrow::StructBuilder> &builder) {
         ARROW_RETURN_NOT_OK(builder->field_builder(0)->AppendScalar(arrow::StringScalar{id_}));
         if (name_.has_value()) {
             ARROW_RETURN_NOT_OK(builder->field_builder(1)->AppendScalar(arrow::StringScalar{name_.value()}));
